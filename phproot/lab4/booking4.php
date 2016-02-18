@@ -7,11 +7,13 @@
 	$_SESSION['movieDate'];
 
 	$db->openConnection();
-	
+
 	//$performance = $db->getPerformance($_SESSION['movieName'],$_SESSION['movieDate']);
 
-	$bookingNumber = $db->bookTicket($_SESSION['movieName'],$_SESSION['movieDate'],$userId);
 
+
+	$bookingNumber = $db->bookTicket($_SESSION['movieName'],$_SESSION['movieDate'],$userId);
+	$performance = $db->getPerformance($_SESSION['movieName'],$_SESSION['movieDate']);
 
 	$db->closeConnection();
 ?>
@@ -30,15 +32,19 @@
 	Date: <?php print $_SESSION['movieDate']?><br>
 	Theater: <?php print $performance[0]['theaterName']?><br>
 	Free Seats: <?php print $performance[0]['remainingSeats']?><br>
+
+	bookingNbr : <?php if ($bookingNumber != -1) {
+		print $bookingNumber;
+		} else {
+		print "Failure, unable too book a ticket!";
+		}	?>
+	<br>
 	<p>
-	<form method=post action="booking4.php">		
-		<input type=submit value="Book ticket">
+	<form method=post action="booking1.php">
+		<input type=submit value="Book a new ticket">
 	</form>
 
-	
+
 </body>
 </html>
 
-
-	Theater: <?php print $performance[0]['theaterName']?><br>
-	Free Seats: <?php print $performance[0]['remainingSeats']?><br>

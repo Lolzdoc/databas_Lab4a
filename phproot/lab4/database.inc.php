@@ -91,7 +91,15 @@ class Database {
 	 * @return The number of affected rows
 	 */
 	private function executeUpdate($query, $param = null) {
-		// ...
+		try {
+			$stmt = $this->conn->prepare($query);
+			$stmt->execute($param);
+			//$result = $stmt->fetchAll();
+		} catch (PDOException $e) {
+			$error = "*** Internal error: " . $e->getMessage() . "<p>" . $query;
+			die($error);
+		}
+		return $stmt;
 	}
 	
 	/**
@@ -126,7 +134,7 @@ class Database {
 	}
 
 public function getPerformance($movieName,$movieDate){
-		
+
 
 		$sql = "select * from Performance where Performance.movieName = ? and Performance.performanceDate = ? order by performanceDate";
 		$result = $this->executeQuery($sql,array($movieName, $movieDate));
@@ -137,16 +145,29 @@ public function getPerformance($movieName,$movieDate){
 	}
 
 public function bookTicket($movieName,$movieDate,$userId){
-		$update = "update Performance set remainingSeats = remainingSeats - 1 where Performance.movieName = ? and Performance.performanceDate = ?";
-		$update = $this->applyChanges($update,array($movieName, $movieDate));
-		
-		$insert = "INSERT INTO Ticket (userName,performanceDate,movieName) VALUES (?, ?, ?)";
-		$insert = $this->executeQuery($insert,array($userId,$movieDate,$movieName));
 
-		$get = "select reservNbr from Ticket where userName = ? and performanceDate = ? and movieName = ?";
-		$get = $this->executeQuery($get,array($userId,$movieDate,$movieName));
-		//print_r($result);
-		return $get[0];
+		$this->conn->beginTransaction();
+
+		$check = "select remainingSeats from Performance where Performance.movieName = ? and Performance.performanceDate = ? for update;";
+		$check = $this->executeQuery($check,array($movieName, $movieDate));
+		if ($check[0]['remainingSeats'] == 0 ){
+			$this->conn->rollBack();
+			$Error = -1;
+			$get = $Error;
+		} else {
+
+		$update = "update Performance set remainingSeats = remainingSeats - 1 where Performance.movieName = ? and Performance.performanceDate = ?";
+		$update = $this->executeUpdate($update,array($movieName, $movieDate));
+
+		$insert = "insert INTO Ticket (userName,performanceDate,movieName) VALUES (?, ?, ?)";
+		$insert = $this->executeUpdate($insert,array($userId,$movieDate,$movieName));
+
+		$get = $this->conn->lastInsertId('reservNbr');
+
+		$this->conn->commit();
+		}
+		return $get;
+
 }
 
 }
